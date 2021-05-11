@@ -33,7 +33,7 @@ jobs:
     - name: Checkout capa
       uses: actions/checkout@v2
       with:
-        repository: fireeye/capa
+        repository: Ana06/capa
         token: ${{ secrets.CAPA_TOKEN }}
     - name: Checkout capa-rules
       uses: actions/checkout@v2
@@ -56,10 +56,19 @@ jobs:
     - name: Get modified files
       id: files
       uses: jitterbit/get-changed-files@v1
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    - name: Install python dependencies
+      run:
+        pip install pyyaml
     - name: Add new rules to CHANGELOG
       run: |
         for added_file in ${{ steps.files.outputs.added }}; do
-          author=$(grep 'author:' rules/$added_file | sed 's/^.*: //' | sed 's/"//g' )
+          [[ $added_file != *.yml ]] && continue # Skip files that are not rules
+          echo "Adding $added_file"
+          author=$(python rules/.github/scripts/changelog_author.py rules/$added_file)
           rule=$(echo $added_file | sed 's/\//\\\//g' | sed 's/\.yml//')
           sed -i "0,/- *$/s//- $rule $author\n-/" CHANGELOG.md
         done
@@ -71,6 +80,6 @@ jobs:
     - name: Push changes to capa
       uses: ad-m/github-push-action@master
       with:
-        repository: fireeye/capa
+        repository: Ana06/capa
         github_token: ${{ secrets.CAPA_TOKEN }}
 
